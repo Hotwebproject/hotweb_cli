@@ -110,15 +110,17 @@ def main():
 
     args = parser.parse_args()
     # create the app
-    if args.name == "create_app":
+    if args.name.lowe() == "create_app":
         arg_handler_create_app(args)
-    elif args.name == "help":
+    elif args.name.lowe() == "help":
         pass
-    elif args.name == "start" and args.appname =="server":
+    elif args.name.lowe() == "start" and args.appname.lowe() =="server":
         pass
-    elif args.name =="create" and args.appname =="migration":
+    elif args.name.lowe() =="create" and args.appname.lowe() =="migration":
         create_migration(args)
-    elif args.name =="migrate":
+    elif args.name =="db:migrate":
+        pass
+    elif (args.name.lowe() =="models" or args.name.lowe() =="model") and args.appname.lowe() =="init":
         pass
     elif args.name =="model:generate":
         models(args)

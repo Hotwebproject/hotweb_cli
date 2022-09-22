@@ -1,9 +1,10 @@
 MANIFEST.in
+README.md
 setup.py
 hotweb_cli/__init__.py
 hotweb_cli/cli.py
 hotweb_cli/exceptions.py
-hotweb_cli/users.py
+hotweb_cli/utils.py
 hotweb_cli.egg-info/PKG-INFO
 hotweb_cli.egg-info/SOURCES.txt
 hotweb_cli.egg-info/dependency_links.txt

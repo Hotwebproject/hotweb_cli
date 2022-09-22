@@ -18,7 +18,7 @@ def readme():
         return info
 setup(
     name="hotweb_cli",
-    version="0.0.12",
+    version="0.0.121",
     license="MIT",
     description="hotweb_cli, a cli tool for hotweb framework",
     author = "Real Manlow,aka ManlowCharumbira",
