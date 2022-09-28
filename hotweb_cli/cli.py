@@ -1,5 +1,7 @@
 import argparse
 import os
+import subprocess
+import json
 # input wrapper
 def Input(text,attempts = 3):
     while attempts >0:
@@ -16,6 +18,8 @@ def skeleton_template(args):
     filenamess = os.listdir()
     imports_ =""
     for file in filenamess:
+        if file =="__init__.py":
+            continue
         if file.endswith(".py"):
             val = f"from {file[:-3]} import {file[:-3].lower().capitalize()}"
             imports_ = imports_ + val + "\n" 
@@ -23,14 +27,36 @@ def skeleton_template(args):
 {imports_}
     """
     return temp
+def run_app(app="app.py"):
+    app = os.path.join(os.getcwd(),app)
+    if os.path.exists(app):
+        subprocess.run("python app.py")
+    else:
+        print("<--------------App not found in the current directory--------------->")
+        # to raise error later versions
 def model_func_generator(model,args):
     """
     teplate for creating models folder
+    ---------------------------------------------------------------------------------
+    import the db configs folder from the config.json
     """
+    """with open("config.json","r") as f:
+        config = json.load(f)"""
     model_kv =f"""
 from hotweb.models.models import Models
-model = Models()
-model.init({args})
+from hotweb.models.models import DBConnection
+import json
+import os
+with open("config.json","r") as f:
+    config = json.load(f)
+conn = DBConnection(config['dialect'],db_config=config)
+if os.path.exists(os.path.join(os.getcwd(),'app.json')):
+    with open('app.json','r') as f:
+        data = json.load(f)
+{model.lower().capitalize()} = Models('{model}',db=conn,dialect=config['dialect'])
+{model.lower().capitalize()}.init('{model}',{
+            args
+            })
 def {model}():
     {args}
     """
@@ -55,6 +81,18 @@ def models(args):
             break
     model_dir = os.path.join(os.getcwd(),"models",f"{model_name}.py")
     model_skeleton = os.path.join(os.getcwd(),"models","__init__.py")
+    config_file = os.path.join(os.getcwd(),"models","config.json")
+    with open(config_file,"w") as f:
+        db_configs = {
+            "host":"host_name_here",
+            "port":"port",
+            "username":"username",
+            "password":"password",
+            "database":"DB_NAME_HERE",
+            "dialect":"mysql",
+            "options":{}
+        }
+        json.dump(db_configs,f,indent=2)
     with open(model_dir,"w") as f:
         f.write(model_func_generator(model_name,models_))
     with open(model_skeleton,"w") as f:
@@ -100,8 +138,42 @@ def arg_handler_create_app(args):
         f.write(f"# ============READ THIS FILE TO GET MORE HELP ======================")
         
     print(f"================CREATED {args.appname} APP SUCCESSFULLY=======================")
-def create_migration(args):
+def db_migrate_handler(migration_file):
+    migrations_folder = os.path.join(os.getcwd(),"migrations",f"{migration_file}.py")
+    if os.path.exists(migrations_folder):
+        os.chdir(os.path.join(os.getcwd(),"migrations"))
+        files = os.listdir()
+        for file in files:
+            if file ==f"{migration_file}.py":
+                subprocess.run(f"python {migration_file}.py")
+                break
+            else:
+                continue
+def create_migration(model,args):
+    """
+    the args holds a dictionary of col, val of table column and its attributes
+    eg.
+    args = {
+        "name":"STRING"
+    }
+    """
     curr = os.getcwd()
+    mig_folder = os.path.join(curr,"migrations")
+    mig_folder_file = os.path.join(curr,"migrations",f"{model}_migration.py")
+    if not os.path.exists(mig_folder):
+        os.makedirs(mig_folder)
+    
+    #with open("")
+        migration_content = f"""
+from hotweb.models import queryInterface
+def up():
+    queryInterface.createTable({model},args)
+def down():
+    queryInterface.dropTable({model})
+        """
+        with open(mig_folder_file,"w") as f:
+            f.write(migration_content)
+        #return migration_content
     
 def main():
     parser = argparse.ArgumentParser()
@@ -110,21 +182,26 @@ def main():
 
     args = parser.parse_args()
     # create the app
-    if args.name.lowe() == "create_app":
+    if args.name.lower() == "create_app":
         arg_handler_create_app(args)
-    elif args.name.lowe() == "help":
+    elif args.name.lower() == "help":
         pass
-    elif args.name.lowe() == "start" and args.appname.lowe() =="server":
-        pass
-    elif args.name.lowe() =="create" and args.appname.lowe() =="migration":
-        create_migration(args)
+    elif (args.name.lower() == "start" or args.name.lower() == "run" ) and args.appname.lower() =="server":
+        run_app()
+    elif args.name.lower() =="create" and args.appname.lower() =="migration":
+        create_migration(args.appname,args)
     elif args.name =="db:migrate":
-        pass
-    elif (args.name.lowe() =="models" or args.name.lowe() =="model") and args.appname.lowe() =="init":
-        pass
-    elif args.name =="model:generate":
+        """
+        read the migrations and compare with the current commited states
+        """
+        if args.appname =="all":
+            pass
+        else:
+            db_migrate_handler(args.appname)
+    elif (args.name.lower() =="models" or args.name.lower() =="model") and args.appname.lower() =="init":
+        model_func_generator("users",args)
+    elif args.name.lower() =="model:generate":
         models(args)
         
 
     print(f"args === {args}, age==={args.name}")
-main()
